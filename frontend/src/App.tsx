@@ -6,19 +6,29 @@ interface Task {
   title: string;
   description: string;
   completed: boolean;
+  due_date?: string;
 }
 
 function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [dueDate, setDueDate] = useState("");
 
-  // Fetch tasks once on component mount
+  // Fetch and Sort tasks once on component mount
   useEffect(() => {
-    fetch('http://localhost:8000/tasks')
+    fetch("http://localhost:8000/tasks")
       .then((res) => res.json())
-      .then((data) => setTasks(data))
-      .catch((error) => console.error(error));
+      .then((data: Task[]) => {
+        // Sort by earliest due date first
+        const sorted = data.sort((a, b) => {
+          const dateA = new Date(a.due_date || "9999-12-31");
+          const dateB = new Date(b.due_date || "9999-12-31");
+          return dateA.getTime() - dateB.getTime();
+        });
+        setTasks(sorted);
+      })
+      .catch((err) => console.error(err));
   }, []);
 
   const toggleComplete = async (id: string) => {
@@ -43,6 +53,7 @@ function App() {
       _id: 'temp-id',
       title: 'My Title',
       description: 'My Description',
+      due_date: dueDate,
       completed: false,
     };
     try {
@@ -62,7 +73,7 @@ function App() {
 
   return (
     <div style={{ margin: '2rem' }}>
-      <h1>Home Task Management (TypeScript)</h1>
+      <h1>Home Task Management</h1>
 
       <div style={{ marginBottom: '1rem' }}>
         <input
@@ -78,6 +89,15 @@ function App() {
           onChange={(e) => setDescription(e.target.value)}
         />
         <button onClick={addTask}>Add Task</button>
+
+        <div>
+          <h1>Due date:</h1>
+          <input
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+          />
+        </div>
       </div>
 
       <ul>

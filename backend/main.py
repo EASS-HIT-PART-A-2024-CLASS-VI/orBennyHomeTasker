@@ -1,6 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from pymongo import MongoClient
 from pydantic import BaseModel
+from datetime import date
+
 import os
 
 app = FastAPI()
@@ -15,6 +17,7 @@ class Task(BaseModel):
     title: str
     description: str = ""
     completed: bool = False
+    due_date: Optional[date] = None
 
 @app.get("/")
 def root():
