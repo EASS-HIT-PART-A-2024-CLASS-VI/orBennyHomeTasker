@@ -17,7 +17,16 @@ function App() {
 
   // Fetch and Sort tasks once on component mount
   useEffect(() => {
-    fetch("http://localhost:8000/tasks")
+    const token = localStorage.getItem("token");
+    if (!token) {
+      // if no token, maybe redirect to /login or show an error
+      return;
+    }
+    fetch("http://localhost:8000/tasks", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
       .then((res) => res.json())
       .then((data: Task[]) => {
         // Sort by earliest due date first
