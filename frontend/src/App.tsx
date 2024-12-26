@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from "react-router-dom";
 
 // Define the shape of a Task
 interface Task {
@@ -10,6 +11,7 @@ interface Task {
 }
 
 function App() {
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -19,7 +21,8 @@ function App() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
-      // if no token, maybe redirect to /login or show an error
+      alert("Please log in first");
+      navigate("/login");
       return;
     }
     fetch("http://localhost:8000/tasks", {
@@ -27,7 +30,15 @@ function App() {
         Authorization: `Bearer ${token}`
       }
     })
-      .then((res) => res.json())
+      .then((res) => {
+        if (res.status === 401) {
+          // Unauthorized => token expired or invalid
+          alert("Session expired or unauthorized");
+          navigate("/login");
+          return [];
+        }
+        return res.json();
+      })
       .then((data: Task[]) => {
         // Sort by earliest due date first
         const sorted = data.sort((a, b) => {
@@ -38,7 +49,7 @@ function App() {
         setTasks(sorted);
       })
       .catch((err) => console.error(err));
-  }, []);
+  }, [navigate]);
 
   const toggleComplete = async (id: string) => {
     try {
@@ -107,6 +118,14 @@ function App() {
             onChange={(e) => setDueDate(e.target.value)}
           />
         </div>
+      </div>
+      <div>
+        <button onClick={() => {
+          localStorage.removeItem("token");
+          navigate("/login");
+        }}>
+          Logout
+        </button>
       </div>
 
       <ul>

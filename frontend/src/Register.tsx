@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function Register() {
+    const navigate = useNavigate();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
@@ -16,8 +18,8 @@ function Register() {
                 const text = await response.text();
                 throw new Error(text || "Registration failed");
             }
-            alert("User registered successfully!");
-            // Maybe redirect to login
+            alert("Registered successfully!");
+            navigate("/login"); // go to login page
         } catch (err) {
             console.error(err);
             alert("Registration failed");
@@ -25,28 +27,32 @@ function Register() {
     };
 
     return (
-        <form onSubmit={handleRegister}>
+        <div style={{ margin: "2rem" }}>
             <h2>Register</h2>
-            <div>
-                <label>Email</label>
-                <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                />
-            </div>
-            <div>
-                <label>Password</label>
-                <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                />
-            </div>
-            <button type="submit">Sign Up</button>
-        </form>
+            <form onSubmit={handleRegister}>
+                <div>
+                    <label>Email: </label>
+                    <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                    />
+                </div>
+
+                <div>
+                    <label>Password: </label>
+                    <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                    />
+                </div>
+
+                <button type="submit">Sign Up</button>
+            </form>
+        </div>
     );
 }
 

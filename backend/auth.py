@@ -1,43 +1,42 @@
-from typing import Optional
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr
+from pymongo import MongoClient
 from passlib.context import CryptContext
 from jose import JWTError, jwt
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from datetime import datetime, timedelta
-from fastapi import Depends
+import os
 
-# For demonstration, we keep everything in one file
-# but best practice is to split routes, models, schemas, etc.
+app = FastAPI()
 
-SECRET_KEY = "YOUR_JWT_SECRET_KEY"  # replace with a strong key!
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+client = MongoClient(MONGO_URI)
+db = client["tasks_db"]
+users_collection = db["users"]
+tasks_collection = db["tasks"]
+
+SECRET_KEY = "YOUR_JWT_SECRET_KEY"  # replace with a real secret!
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-# Create a password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
-
-# MongoDB user collection
-users_collection = db["users"]  # e.g. in your main.py: db = client["tasks_db"]
-
-class User(BaseModel):
-    id: Optional[str] = None  # We'll store Mongo _id as string
-    email: EmailStr
-    hashed_password: str
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
 
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
+def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-    """Create JWT token."""
+def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -48,62 +47,59 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 def get_current_user(token: str = Depends(oauth2_scheme)):
-    """Decodes the JWT token, returns the user record."""
+    """Decode the JWT token, return the user record from DB."""
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_email: str = payload.get("sub")
-        user_id: str = payload.get("user_id")
-        if user_email is None or user_id is None:
+        email: str = payload.get("sub")
+        if email is None:
             raise HTTPException(status_code=401, detail="Invalid token payload")
     except JWTError:
         raise HTTPException(status_code=401, detail="Token is invalid or expired")
 
-    user = users_collection.find_one({"_id": ObjectId(user_id)})
+    user = users_collection.find_one({"email": email})
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
 
-    return user 
+    return user
 
 @app.post("/register")
 def register_user(user_data: UserCreate):
-    # Check if email already exists
     existing_user = users_collection.find_one({"email": user_data.email})
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    # Hash the password
-    hashed = get_password_hash(user_data.password)
+    hashed_password = get_password_hash(user_data.password)
     new_user = {
         "email": user_data.email,
-        "hashed_password": hashed
+        "hashed_password": hashed_password
     }
-    # Insert into Mongo
-    result = users_collection.insert_one(new_user)
-    # Convert ObjectId to string
-    user_id_str = str(result.inserted_id)
+    users_collection.insert_one(new_user)
+    return {"message": "User registered successfully"}
 
-    return {"message": "User created", "user_id": user_id_str}
-
-@app.post("/login")
+@app.post("/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    # form_data.username is actually the user’s email in this scenario
     user = users_collection.find_one({"email": form_data.username})
     if not user:
         raise HTTPException(status_code=400, detail="Invalid credentials")
 
-    # Compare hashed password
     if not verify_password(form_data.password, user["hashed_password"]):
         raise HTTPException(status_code=400, detail="Invalid credentials")
 
-    # Create JWT
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user["email"], "user_id": str(user["_id"])},
+        data={"sub": user["email"]},
         expires_delta=access_token_expires
     )
-
     return {
         "access_token": access_token,
         "token_type": "bearer"
     }
 
+# Example of a protected endpoint
+@app.get("/protected-tasks")
+def get_user_tasks(current_user: dict = Depends(get_current_user)):
+    user_email = current_user["email"]
+    tasks = list(tasks_collection.find({"owner_email": user_email}))
+    for t in tasks:
+        t["_id"] = str(t["_id"])
+    return tasks

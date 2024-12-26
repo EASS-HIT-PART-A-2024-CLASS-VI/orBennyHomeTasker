@@ -1,23 +1,26 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function Login() {
+    const navigate = useNavigate();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        // By default, FastAPI's OAuth2PasswordRequestForm expects `username` and `password`
-        // We'll pass `username`=email
         try {
+            // FastAPI OAuth2PasswordRequestForm expects username/password in form-data
+            // We'll pass username = email
+            const params = new URLSearchParams();
+            params.append("username", email);
+            params.append("password", password);
+
             const response = await fetch("http://localhost:8000/login", {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
-                body: new URLSearchParams({
-                    username: email,
-                    password: password,
-                }),
+                body: params
             });
 
             if (!response.ok) {
@@ -26,10 +29,9 @@ function Login() {
             }
 
             const data = await response.json();
-            // data.access_token
             localStorage.setItem("token", data.access_token);
-            alert("Login success!");
-            // redirect or update UI
+            alert("Login successful!");
+            navigate("/"); // go to main page
         } catch (err) {
             console.error(err);
             alert("Login failed");
@@ -37,28 +39,32 @@ function Login() {
     };
 
     return (
-        <form onSubmit={handleLogin}>
+        <div style={{ margin: "2rem" }}>
             <h2>Login</h2>
-            <div>
-                <label>Email</label>
-                <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                />
-            </div>
-            <div>
-                <label>Password</label>
-                <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                />
-            </div>
-            <button type="submit">Login</button>
-        </form>
+            <form onSubmit={handleLogin}>
+                <div>
+                    <label>Email: </label>
+                    <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                    />
+                </div>
+
+                <div>
+                    <label>Password: </label>
+                    <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                    />
+                </div>
+
+                <button type="submit">Login</button>
+            </form>
+        </div>
     );
 }
 
