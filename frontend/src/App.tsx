@@ -2,10 +2,10 @@ import React, { useEffect, useState } from 'react';
 
 // Define the shape of a Task
 interface Task {
-  _id?: string;
+  _id: string;           // instead of _id?: string
   title: string;
-  description?: string;
-  completed?: boolean;
+  description: string;
+  completed: boolean;
 }
 
 function App() {
@@ -21,9 +21,30 @@ function App() {
       .catch((error) => console.error(error));
   }, []);
 
+  const toggleComplete = async (id: string) => {
+    try {
+      const response = await fetch(`http://localhost:8000/tasks/${id}/complete`, {
+        method: "PATCH",
+      });
+      const data = await response.json();
+      // Update state
+      setTasks((prevTasks) =>
+        prevTasks.map((t) =>
+          t._id === id ? { ...t, completed: data.completed } : t
+        )
+      );
+    } catch (err) {
+      console.error(err);
+    }
+  };
   // Add a new task
   const addTask = async () => {
-    const newTask: Task = { title, description };
+    const newTask: Task = {
+      _id: 'temp-id',
+      title: 'My Title',
+      description: 'My Description',
+      completed: false,
+    };
     try {
       const response = await fetch('http://localhost:8000/tasks', {
         method: 'POST',
@@ -62,7 +83,13 @@ function App() {
       <ul>
         {tasks.map((task) => (
           <li key={task._id}>
+            <input
+              type="checkbox"
+              checked={task.completed}
+              onChange={() => toggleComplete(task._id)}
+            />
             <strong>{task.title}</strong> - {task.description}
+            {task.completed ? " (Done)" : ""}
           </li>
         ))}
       </ul>

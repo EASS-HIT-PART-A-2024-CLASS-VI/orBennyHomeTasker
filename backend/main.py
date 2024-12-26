@@ -50,3 +50,18 @@ def delete_task(task_id: str):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Task not found")
     return {"message": "Task deleted successfully"}
+
+@app.patch("/tasks/{task_id}/complete")
+def toggle_task_completion(task_id: str):
+    task = tasks_collection.find_one({"_id": {"$oid": task_id} if len(task_id) == 24 else task_id})
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    current_status = task.get("completed", False)
+    updated_status = not current_status
+
+    result = tasks_collection.update_one(
+        {"_id": task["_id"]},
+        {"$set": {"completed": updated_status}}
+    )
+    return {"message": "Task completion toggled", "completed": updated_status}
