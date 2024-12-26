@@ -24,13 +24,20 @@ def root():
     return {"message": "Home Task Management API"}
 
 @app.post("/tasks")
-def create_task(task: Task):
-    result = tasks_collection.insert_one(task.dict())
-    return {"_id": str(result.inserted_id), **task.dict()}
+def create_task(task: Task, current_user: dict = Depends(get_current_user)):
+    # We can store the user_id with the task, so tasks are user-specific
+    task_dict = task.dict()
+    # if you used 'task' as a Pydantic model
+    task_dict["owner_id"] = str(current_user["_id"])
+
+    result = tasks_collection.insert_one(task_dict)
+    return {"_id": str(result.inserted_id), **task_dict}
 
 @app.get("/tasks")
-def get_tasks():
-    tasks = list(tasks_collection.find({}))
+def get_tasks(current_user: dict = Depends(get_current_user)):
+    # fetch only tasks that belong to the current user
+    user_id_str = str(current_user["_id"])
+    tasks = list(tasks_collection.find({"owner_id": user_id_str}))
     for t in tasks:
         t["_id"] = str(t["_id"])
     return tasks
