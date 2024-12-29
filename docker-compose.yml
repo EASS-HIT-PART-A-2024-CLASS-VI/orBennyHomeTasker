@@ -1,8 +1,9 @@
+version: "3.8"
+
 services:
   mongodb:
     image: mongo:latest
     container_name: mongodb
-    restart: always
     ports:
       - "27017:27017"
     volumes:
@@ -13,14 +14,15 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: fastapi-backend
-    volumes:
-      - ./backend:/app
     ports:
       - "8000:8000"
     depends_on:
       - mongodb
-    environment:
-      MONGO_URI: mongodb://mongodb:27017/my_database
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app # Enables live code reload for backend
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
   frontend:
     build:
@@ -31,6 +33,10 @@ services:
       - "3000:3000"
     depends_on:
       - backend
+    volumes:
+      - ./frontend:/app # Enables live code reload for frontend
+      - /app/node_modules # Prevents host's node_modules from overwriting container's
+    command: npm run dev -- --host 0.0.0.0
 
 volumes:
   mongodb_data:

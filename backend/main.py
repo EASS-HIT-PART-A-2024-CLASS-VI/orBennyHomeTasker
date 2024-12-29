@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from pymongo import MongoClient
 from pydantic import BaseModel
 from datetime import date
+from typing import Optional
 
 import os
 

@@ -17,10 +17,11 @@ COPY . .
 RUN npm run build
 
 # Install serve (or use another server) to serve the dist folder
-RUN npm install -g serve
+#RUN npm install -g serve
 
 # Expose port 3000 so we can access it on localhost
 EXPOSE 3000
 
 # Command to serve the production build
-CMD ["serve", "-s", "dist", "-l", "3000"]
+#CMD ["serve", "-s", "dist", "-l", "3000"]
+CMD ["npm", "run", "dev", "--", "--host"]

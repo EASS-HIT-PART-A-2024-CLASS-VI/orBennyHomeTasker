@@ -5,19 +5,26 @@ from pymongo import MongoClient
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
+from bson.objectid import ObjectId
 import os
+import secrets
+
 
 app = FastAPI()
-
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+#secret_key = secrets.token_urlsafe(32)
+#SECRET_KEY = secret_key  # replace with a real secret!
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+if not SECRET_KEY:
+    raise ValueError("No JWT_SECRET_KEY environment variable set")
+
 client = MongoClient(MONGO_URI)
 db = client["tasks_db"]
 users_collection = db["users"]
 tasks_collection = db["tasks"]
-
-SECRET_KEY = "YOUR_JWT_SECRET_KEY"  # replace with a real secret!
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
