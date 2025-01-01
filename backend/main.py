@@ -1,13 +1,26 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from pymongo import MongoClient
 from pydantic import BaseModel
 from datetime import date
 from typing import Optional
-
+from auth import get_current_user
+from auth import router as auth_router
 import os
 
 app = FastAPI()
+origins = [
+    "*", #allow everything
+]
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],   # allow POST, GET, OPTIONS, etc.
+    allow_headers=["*"],   # allow all request headers
+)
+app.include_router(auth_router, prefix="/auth", tags=["auth"]) # Include the router from auth
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/tasks_db")
 client = MongoClient(MONGO_URI)
 db = client["tasks_db"]

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, APIRouter
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr
 from pymongo import MongoClient
@@ -10,7 +10,7 @@ import os
 import secrets
 
 
-app = FastAPI()
+router = APIRouter()
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 #secret_key = secrets.token_urlsafe(32)
@@ -69,7 +69,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
 
     return user
 
-@app.post("/register")
+@router.post("/register")
 def register_user(user_data: UserCreate):
     existing_user = users_collection.find_one({"email": user_data.email})
     if existing_user:
@@ -83,7 +83,7 @@ def register_user(user_data: UserCreate):
     users_collection.insert_one(new_user)
     return {"message": "User registered successfully"}
 
-@app.post("/login", response_model=Token)
+@router.post("/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends()):
     user = users_collection.find_one({"email": form_data.username})
     if not user:
@@ -103,7 +103,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
     }
 
 # Example of a protected endpoint
-@app.get("/protected-tasks")
+@router.get("/protected-tasks")
 def get_user_tasks(current_user: dict = Depends(get_current_user)):
     user_email = current_user["email"]
     tasks = list(tasks_collection.find({"owner_email": user_email}))
