@@ -1,10 +1,23 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+    Button,
+    TextField,
+    Box,
+    Typography,
+    Stack,
+    Snackbar,
+    Alert
+} from "@mui/material";
 
 function Register() {
     const navigate = useNavigate();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    //const [confirmPassword, setConfirmPassword] = useState("");
+    const [successOpen, setSuccessOpen] = useState(false);
+    const [errorOpen, setErrorOpen] = useState(false);
+    const [errorMsg, setErrorMsg] = useState("");
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -18,41 +31,75 @@ function Register() {
                 const text = await response.text();
                 throw new Error(text || "Registration failed");
             }
-            alert("Registered successfully!");
-            navigate("/login"); // go to login page
+            setSuccessOpen(true);
+            setTimeout(() => navigate("/login"), 1500);//go to login page
         } catch (err) {
-            console.error(err);
-            alert("Registration failed");
+            setErrorOpen(true);
+            setErrorMsg((err as Error).message);
         }
     };
 
     return (
-        <div style={{ margin: "2rem" }}>
-            <h2>Register</h2>
+        <Box
+            sx={{
+                maxWidth: 400,
+                mx: "auto",
+                mt: 5,
+                p: 4,
+                border: "1px solid",
+                borderColor: "divider",
+                borderRadius: 2,
+            }}
+        >
+            <Typography variant="h5" mb={3} textAlign="center">
+                Register
+            </Typography>
             <form onSubmit={handleRegister}>
-                <div>
-                    <label>Email: </label>
-                    <input
+                <Stack spacing={3}>
+                    <TextField
+                        label="Email"
                         type="email"
+                        variant="outlined"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
                     />
-                </div>
-
-                <div>
-                    <label>Password: </label>
-                    <input
+                    <TextField
+                        label="Password"
                         type="password"
+                        variant="outlined"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
                     />
-                </div>
-
-                <button type="submit">Sign Up</button>
+                    <Button variant="contained" type="submit">
+                        Sign Up
+                    </Button>
+                </Stack>
             </form>
-        </div>
+
+            {/* Success Snackbar */}
+            <Snackbar
+                open={successOpen}
+                autoHideDuration={3000}
+                onClose={() => setSuccessOpen(false)}
+            >
+                <Alert onClose={() => setSuccessOpen(false)} severity="success">
+                    Registered successfully!
+                </Alert>
+            </Snackbar>
+
+            {/* Error Snackbar */}
+            <Snackbar
+                open={errorOpen}
+                autoHideDuration={3000}
+                onClose={() => setErrorOpen(false)}
+            >
+                <Alert onClose={() => setErrorOpen(false)} severity="error">
+                    {errorMsg}
+                </Alert>
+            </Snackbar>
+        </Box>
     );
 }
 
