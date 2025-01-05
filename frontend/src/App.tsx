@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 
 // Define the shape of a Task
@@ -8,6 +8,17 @@ interface Task {
   description: string;
   completed: boolean;
   due_date?: string;
+  category: Category;
+}
+
+// Define an Enum for the categories
+enum Category {
+  Bathroom = "bathroom",
+  Bedroom = "bedroom",
+  Garden = "garden",
+  Kitchen = "kitchen",
+  Laundry = "laundry",
+  Livingroom = "livingroom"
 }
 
 function App() {
@@ -15,11 +26,13 @@ function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [dueDate, setDueDate] = useState("");
+  const [dueDate, setDueDate] = useState<string | null>(null);
+  const [category, setCategory] = useState<Category>(Category.Bathroom);
 
   // Fetch and Sort tasks once on component mount
   useEffect(() => {
     const token = localStorage.getItem("token");
+    console.log("Retrieved token:", token);
     if (!token) {
       alert("Please log in first");
       navigate("/login");
@@ -52,10 +65,26 @@ function App() {
   }, [navigate]);
 
   const toggleComplete = async (id: string) => {
+    const token = localStorage.getItem("token");
+    console.log("Retrieved token for toggleComplete:", token);
+    if (!token) {
+      alert("Please log in first");
+      navigate("/login");
+      return;
+    }
+
     try {
       const response = await fetch(`http://localhost:8000/tasks/${id}/complete`, {
         method: "PATCH",
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
+      if (response.status === 401) {
+        alert("Session expired or unauthorized");
+        navigate("/login");
+        return;
+      }
       const data = await response.json();
       // Update state
       setTasks((prevTasks) =>
@@ -67,81 +96,124 @@ function App() {
       console.error(err);
     }
   };
+
   // Add a new task
   const addTask = async () => {
+    const token = localStorage.getItem("token");
+    console.log("Retrieved token for addTask:", token);
+    if (!token) {
+      alert("Please log in first");
+      navigate("/login");
+      return;
+    }
+
     const newTask: Task = {
       _id: 'temp-id',
-      title: 'My Title',
-      description: 'My Description',
-      due_date: dueDate,
+      title: title,
+      description: description,
+      due_date: dueDate ? new Date(dueDate).toISOString() : undefined,
       completed: false,
+      category: category,
     };
     try {
       const response = await fetch('http://localhost:8000/tasks', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(newTask),
       });
+      if (response.status === 401) {
+        alert("Session expired or unauthorized");
+        navigate("/login");
+        return;
+      }
       const created = await response.json();
       setTasks((prev) => [...prev, created]);
       setTitle('');
       setDescription('');
+      setDueDate(null);
+      setCategory(Category.Bathroom);
     } catch (err) {
       console.error(err);
     }
   };
 
+  // Group tasks by category
+  const groupedTasks = tasks.reduce((acc, task) => {
+    if (!acc[task.category]) {
+      acc[task.category] = [];
+    }
+    acc[task.category].push(task);
+    return acc;
+  }, {} as Record<Category, Task[]>);
+
   return (
-    <div style={{ margin: '2rem' }}>
-      <h1>Home Task Management</h1>
 
-      <div style={{ marginBottom: '1rem' }}>
-        <input
-          type="text"
-          placeholder="Task Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Task Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-        <button onClick={addTask}>Add Task</button>
+        <div style={{ margin: '2rem' }}>
+          <h1>Home Task Management</h1>
 
-        <div>
-          <h1>Due date:</h1>
-          <input
-            type="date"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-          />
-        </div>
-      </div>
-      <div>
-        <button onClick={() => {
-          localStorage.removeItem("token");
-          navigate("/login");
-        }}>
-          Logout
-        </button>
-      </div>
-
-      <ul>
-        {tasks.map((task) => (
-          <li key={task._id}>
+          <div style={{ marginBottom: '1rem' }}>
             <input
-              type="checkbox"
-              checked={task.completed}
-              onChange={() => toggleComplete(task._id)}
+              type="text"
+              placeholder="Task Title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
             />
-            <strong>{task.title}</strong> - {task.description}
-            {task.completed ? " (Done)" : ""}
-          </li>
-        ))}
-      </ul>
-    </div>
+            <input
+              type="text"
+              placeholder="Task Description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+            <div>
+              <h1>Due date:</h1>
+              <input
+                type="date"
+                value={dueDate || ''}
+                onChange={(e) => setDueDate(e.target.value)}
+              />
+            </div>
+            <div>
+              <h1>Category:</h1>
+              <select value={category} onChange={(e) => setCategory(e.target.value as Category)}>
+                {Object.values(Category).map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+            <button onClick={addTask}>Add Task</button>
+          </div>
+          <div>
+            <button onClick={() => {
+              localStorage.removeItem("token");
+              navigate("/login");
+            }}>
+              Logout
+            </button>
+          </div>
+
+          {Object.entries(groupedTasks).map(([category, tasks]) => (
+            <div key={category}>
+              <h2>{category}</h2>
+              <ul>
+                {tasks.map((task) => (
+                  <li key={task._id} style={{ marginBottom: '1rem', padding: '1rem', border: '1px solid #ccc', borderRadius: '8px' }}>
+                    <input
+                      type="checkbox"
+                      checked={task.completed}
+                      onChange={() => toggleComplete(task._id)}
+                    />
+                    <strong>{task.title}</strong> - {task.description} - {new Date(task.due_date || "").toLocaleString("en-GB", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                    {task.completed ? " (Done)" : ""}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+
   );
 }
 

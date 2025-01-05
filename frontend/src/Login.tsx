@@ -30,7 +30,7 @@ function Login() {
 
             const data = await response.json();
             localStorage.setItem("token", data.access_token);
-            alert("Login successful!");
+            alert("Login successful");
             navigate("/"); // go to main page
         } catch (err) {
             console.error(err);
