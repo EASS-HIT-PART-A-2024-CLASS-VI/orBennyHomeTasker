@@ -16,7 +16,9 @@
 a {
   font-weight: 500;
   color: #646cff;
-  text-decoration: inherit;
+  text-decoration: none; /* Ensure text decoration is none */
+  display: inline-block; /* Ensure it is displayed as an inline block */
+  margin: 1rem 0; /* Add some margin for visibility */
 }
 a:hover {
   color: #535bf2;

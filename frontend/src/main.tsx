@@ -6,6 +6,7 @@ import './index.css'
 import App from './App.tsx'
 import Login from './Login.tsx';
 import Register from './Register.tsx';
+import CalendarPage from './CalendarPage.tsx';
 
 const theme = createTheme({
   // You can customize your palette, typography, etc. here
@@ -25,6 +26,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <Route path="/" element={<App />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/calendar" element={<CalendarPage />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

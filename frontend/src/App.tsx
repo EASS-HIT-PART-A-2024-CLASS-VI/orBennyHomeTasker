@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 // Define the shape of a Task
 interface Task {
@@ -8,6 +8,7 @@ interface Task {
   description: string;
   completed: boolean;
   due_date?: string;
+  start_time?: string;
   category: Category;
 }
 
@@ -27,6 +28,7 @@ function App() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState<string | null>(null);
+  const [startTime, setStartTime] = useState<string | null>(null);
   const [category, setCategory] = useState<Category>(Category.Bathroom);
 
   // Fetch and Sort tasks once on component mount
@@ -99,7 +101,7 @@ function App() {
 
   // Data validation function
   const validateData = () => {
-    if (!title || !description || !dueDate || !category) {
+    if (!title || !description || !dueDate || !startTime || !category) {
       alert("All fields must be filled out");
       return false;
     }
@@ -130,6 +132,7 @@ function App() {
       title: title,
       description: description,
       due_date: dueDate ? new Date(dueDate).toISOString() : null,  // Ensure due_date is null if not provided
+      start_time: startTime ? new Date(startTime).toISOString() : null,
       completed: false,
       category: category,
     };
@@ -152,6 +155,7 @@ function App() {
       setTitle('');
       setDescription('');
       setDueDate(null);
+      setStartTime(null);
       setCategory(Category.Bathroom);
     } catch (err) {
       console.error(err);
@@ -190,71 +194,79 @@ function App() {
   }, {} as Record<Category, Task[]>);
 
   return (
-
-        <div style={{ margin: '2rem' }}>
-          <h1>Home Task Management</h1>
-
-          <div style={{ marginBottom: '1rem' }}>
-            <input
-              type="text"
-              placeholder="Task Title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-            <input
-              type="text"
-              placeholder="Task Description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-            <div>
-              <h1>Due date:</h1>
-              <input
-                type="datetime-local"
-                value={dueDate || ''}
-                onChange={(e) => setDueDate(e.target.value)}
-              />
-            </div>
-            <div>
-              <h1>Category:</h1>
-              <select value={category} onChange={(e) => setCategory(e.target.value as Category)}>
-                {Object.values(Category).map((cat) => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-            </div>
-            <button onClick={addTask}>Add Task</button>
-          </div>
-          <div>
-            <button onClick={() => {
-              localStorage.removeItem("token");
-              navigate("/login");
-            }}>
-              Logout
-            </button>
-          </div>
-
-          {Object.entries(groupedTasks).map(([category, tasks]) => (
-            <div key={category}>
-              <h2>{category}</h2>
-              <ul>
-                {tasks.map((task) => (
-                  <li key={task._id} style={{ marginBottom: '1rem', padding: '1rem', border: '1px solid #ccc', borderRadius: '8px' }}>
-                    <input
-                      type="checkbox"
-                      checked={task.completed}
-                      onChange={() => toggleComplete(task._id)}
-                    />
-                    <strong>{task.title}</strong> - {task.description} - {new Date(task.due_date || "").toLocaleString("en-GB", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
-                    {task.completed ? " (Done)" : ""}
-                    <button onClick={() => deleteTask(task._id)}>Delete</button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+    <div style={{ margin: '2rem' }}>
+      <h1>Home Task Management</h1>
+      <div style={{ marginBottom: '1rem' }}>
+        <Link to="/calendar">View Calendar</Link>
+      </div>
+      <div style={{ marginBottom: '1rem' }}>
+        <input
+          type="text"
+          placeholder="Task Title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="Task Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+        <div>
+          <h1>Due date:</h1>
+          <input
+            type="datetime-local"
+            value={dueDate || ''}
+            onChange={(e) => setDueDate(e.target.value)}
+          />
         </div>
+        <div>
+          <h1>Start time:</h1>
+          <input
+            type="datetime-local"
+            value={startTime || ''}
+            onChange={(e) => setStartTime(e.target.value)}
+          />
+        </div>
+        <div>
+          <h1>Category:</h1>
+          <select value={category} onChange={(e) => setCategory(e.target.value as Category)}>
+            {Object.values(Category).map((cat) => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+        </div>
+        <button onClick={addTask}>Add Task</button>
+      </div>
+      <div>
+        <button onClick={() => {
+          localStorage.removeItem("token");
+          navigate("/login");
+        }}>
+          Logout
+        </button>
+      </div>
 
+      {Object.entries(groupedTasks).map(([category, tasks]) => (
+        <div key={category}>
+          <h2>{category}</h2>
+          <ul>
+            {tasks.map((task) => (
+              <li key={task._id} style={{ marginBottom: '1rem', padding: '1rem', border: '1px solid #ccc', borderRadius: '8px' }}>
+                <input
+                  type="checkbox"
+                  checked={task.completed}
+                  onChange={() => toggleComplete(task._id)}
+                />
+                <strong>{task.title}</strong> - {task.description} - {new Date(task.due_date || "").toLocaleString("en-GB", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                {task.completed ? " (Done)" : ""}
+                <button onClick={() => deleteTask(task._id)}>Delete</button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
   );
 }
 

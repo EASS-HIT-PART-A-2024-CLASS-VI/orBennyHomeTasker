@@ -1,27 +1,20 @@
-# Use a Node version that supports modern features (e.g., Node 18+)
+# Use Node.js 18 for compatibility and stability
 FROM node:18
 
-# Create app directory in container
+# Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json (if exists)
+# Copy only package.json and package-lock.json first (for Docker caching efficiency)
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install
+# Install dependencies in a clean, consistent way
+RUN npm ci
 
-# Copy your entire project (including tsconfig.json, src/, etc.)
+# Copy the rest of the frontend project
 COPY . .
 
-# Build the Vite project (will run tsc automatically if you have "build": "tsc && vite build" in package.json)
-RUN npm run build
-
-# Install serve (or use another server) to serve the dist folder
-#RUN npm install -g serve
-
-# Expose port 3000 so we can access it on localhost
+# Expose the port used by Vite
 EXPOSE 3000
 
-# Command to serve the production build
-#CMD ["serve", "-s", "dist", "-l", "3000"]
+# Start the development server
 CMD ["npm", "run", "dev", "--", "--host"]
