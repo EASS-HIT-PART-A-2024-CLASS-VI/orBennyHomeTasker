@@ -107,11 +107,10 @@ function App() {
       return;
     }
 
-    const newTask: Task = {
-      _id: 'temp-id',
+    const newTask = {
       title: title,
       description: description,
-      due_date: dueDate ? new Date(dueDate).toISOString() : undefined,
+      due_date: dueDate ? new Date(dueDate).toISOString() : null,  // Ensure due_date is null if not provided
       completed: false,
       category: category,
     };
@@ -137,6 +136,28 @@ function App() {
       setCategory(Category.Bathroom);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const deleteTask = async (taskId: string) => {
+    const token = localStorage.getItem("token");
+    console.log("Retrieved token for deleteTask:", token);
+    if (!token) {
+      alert("Please log in first");
+      navigate("/login");
+      return;
+    }
+
+    try {
+      await fetch(`http://localhost:8000/tasks/${taskId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      setTasks(tasks.filter(task => task._id !== taskId));
+    } catch (error) {
+      console.error('Error deleting task:', error);
     }
   };
 
@@ -207,6 +228,7 @@ function App() {
                     />
                     <strong>{task.title}</strong> - {task.description} - {new Date(task.due_date || "").toLocaleString("en-GB", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
                     {task.completed ? " (Done)" : ""}
+                    <button onClick={() => deleteTask(task._id)}>Delete</button>
                   </li>
                 ))}
               </ul>

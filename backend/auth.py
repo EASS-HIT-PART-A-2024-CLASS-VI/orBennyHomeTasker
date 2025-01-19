@@ -13,8 +13,8 @@ import secrets
 router = APIRouter()
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 SECRET_KEY = os.getenv("JWT_SECRET_KEY")
-#secret_key = secrets.token_urlsafe(32)
-#SECRET_KEY = secret_key  # replace with a real secret!
+secret_key = secrets.token_urlsafe(32)
+SECRET_KEY = secret_key  # replace with a real secret!
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -40,6 +40,7 @@ class Token(BaseModel):
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
+    
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
