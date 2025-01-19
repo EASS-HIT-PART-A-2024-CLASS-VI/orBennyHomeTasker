@@ -97,8 +97,27 @@ function App() {
     }
   };
 
+  // Data validation function
+  const validateData = () => {
+    if (!title || !description || !dueDate || !category) {
+      alert("All fields must be filled out");
+      return false;
+    }
+    const selectedDate = new Date(dueDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Set to start of the day
+    if (selectedDate < today) {
+      alert("Due date must be today or later");
+      return false;
+    }
+    return true;
+  };
+
   // Add a new task
   const addTask = async () => {
+    if (!validateData()) {
+      return;
+    }
     const token = localStorage.getItem("token");
     console.log("Retrieved token for addTask:", token);
     if (!token) {
@@ -191,7 +210,7 @@ function App() {
             <div>
               <h1>Due date:</h1>
               <input
-                type="date"
+                type="datetime-local"
                 value={dueDate || ''}
                 onChange={(e) => setDueDate(e.target.value)}
               />
